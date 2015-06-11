@@ -57,6 +57,14 @@
     UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panAction:)];
     [self addGestureRecognizer:pan];
     
+    UISwipeGestureRecognizer *swipeRight = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipeGesture:)];
+    swipeRight.direction = UISwipeGestureRecognizerDirectionRight;
+    [self addGestureRecognizer:swipeRight];
+
+    UISwipeGestureRecognizer *swipeLeft = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipeGesture:)];
+    swipeLeft.direction = UISwipeGestureRecognizerDirectionLeft;
+    [self addGestureRecognizer:swipeLeft];
+    
 }
 
 - (void)setDataSource:(id<LPageViewDataSource>)dataSource{
@@ -79,10 +87,10 @@
         }
     }
     if (self.nums > 1) {
-        self.viewLeft = [_dataSource pageView:self viewForIndex:[self getLeft]];
+        self.viewLeft = [_dataSource pageView:self viewForIndex:[self getLeftIndex]];
         [self addSubview:_viewLeft];
         
-        self.viewRight = [_dataSource pageView:self viewForIndex:[self getRight]];
+        self.viewRight = [_dataSource pageView:self viewForIndex:[self getRightIndex]];
         [self addSubview:_viewRight];
         
         switch (_direction) {
@@ -190,11 +198,11 @@
             BOOL bLeftTop = NO;
             switch (_direction) {
                 case LPageViewDirectionHorizontal:
-                    bChange = fabs(pt.x) >= self.frame.size.width/2;
+                    bChange = fabs(pt.x) >= self.frame.size.width/4;
                     bLeftTop = pt.x > 0;
                     break;
                 case LPageViewDirectionVertical:
-                    bChange = fabs(pt.y) >= self.frame.size.height/2;
+                    bChange = fabs(pt.y) >= self.frame.size.height/4;
                     bLeftTop = pt.y > 0;
                     break;
             }
@@ -202,46 +210,17 @@
             if (bChange) {
                 
                 if (bLeftTop) {
-                    
-                    _index = [self getLeft];
-                    
-                    self.tmp = _viewRight;
-                    
-                    self.viewRight = _viewCenter;
-                    self.viewCenter = _viewLeft;
-                    self.viewLeft = [_dataSource pageView:self viewForIndex:[self getLeft]];
+                
+                    [self moveToLeft];
                     
                 }
                 else{
-                    _index = [self getRight];
-                    self.tmp = _viewLeft;
-                    
-                    self.viewLeft = _viewCenter;
-                    self.viewCenter = _viewRight;
-                    self.viewRight = [_dataSource pageView:self viewForIndex:[self getRight]];
-                }
-                
-                if (_delegate) {
-                    [_delegate pageView:self didScrollToIndex:_index];
+                    [self moveToRight];
                 }
                 
             }
-            self.point = CGPointMake(0, 0);
-            switch (_direction) {
-                case LPageViewDirectionHorizontal:
-                    _viewCenter.frame = self.bounds;
-                    _viewLeft.frame = CGRectMake(-self.bounds.size.width, self.bounds.origin.y, self.bounds.size.width, self.bounds.size.height);
-                    _viewRight.frame = CGRectMake(self.bounds.size.width, self.bounds.origin.y, self.bounds.size.width, self.bounds.size.height);
-                    break;
-                case LPageViewDirectionVertical:
-                    _viewCenter.frame = self.bounds;
-                    _viewLeft.frame = CGRectMake(self.bounds.origin.x, -self.bounds.size.height, self.bounds.size.width, self.bounds.size.height);
-                    _viewRight.frame = CGRectMake(self.bounds.origin.x, self.bounds.size.height, self.bounds.size.width, self.bounds.size.height);
-                    break;
-                    
-                default:
-                    break;
-            }
+            
+            [self movetoDefault];
         }
         default:
             break;
@@ -250,7 +229,21 @@
 
 }
 
-- (NSInteger)getRight{
+-(void)swipeGesture:(UISwipeGestureRecognizer *)sender
+{
+    if (sender.direction == UISwipeGestureRecognizerDirectionLeft) {
+        [self moveToRight];
+    }
+    if (sender.direction == UISwipeGestureRecognizerDirectionRight) {
+        [self moveToLeft];
+    }
+    
+    [self movetoDefault];
+    
+    
+}
+
+- (NSInteger)getRightIndex{
     if (_index<_nums-1) {
         return _index+1;
     }
@@ -259,12 +252,56 @@
     }
 }
 
-- (NSInteger)getLeft{
+- (NSInteger)getLeftIndex{
     if (_index==0) {
         return _nums-1;
     }
     else{
         return _index-1;
+    }
+}
+
+- (void)moveToLeft{
+    _index = [self getLeftIndex];
+    
+    self.tmp = _viewRight;
+    
+    self.viewRight = _viewCenter;
+    self.viewCenter = _viewLeft;
+    self.viewLeft = [_dataSource pageView:self viewForIndex:[self getLeftIndex]];
+    if (_delegate) {
+        [_delegate pageView:self didScrollToIndex:_index];
+    }
+}
+
+- (void)moveToRight{
+    _index = [self getRightIndex];
+    self.tmp = _viewLeft;
+    
+    self.viewLeft = _viewCenter;
+    self.viewCenter = _viewRight;
+    self.viewRight = [_dataSource pageView:self viewForIndex:[self getRightIndex]];
+    if (_delegate) {
+        [_delegate pageView:self didScrollToIndex:_index];
+    }
+}
+
+- (void)movetoDefault{
+    self.point = CGPointMake(0, 0);
+    switch (_direction) {
+        case LPageViewDirectionHorizontal:
+            _viewCenter.frame = self.bounds;
+            _viewLeft.frame = CGRectMake(-self.bounds.size.width, self.bounds.origin.y, self.bounds.size.width, self.bounds.size.height);
+            _viewRight.frame = CGRectMake(self.bounds.size.width, self.bounds.origin.y, self.bounds.size.width, self.bounds.size.height);
+            break;
+        case LPageViewDirectionVertical:
+            _viewCenter.frame = self.bounds;
+            _viewLeft.frame = CGRectMake(self.bounds.origin.x, -self.bounds.size.height, self.bounds.size.width, self.bounds.size.height);
+            _viewRight.frame = CGRectMake(self.bounds.origin.x, self.bounds.size.height, self.bounds.size.width, self.bounds.size.height);
+            break;
+            
+        default:
+            break;
     }
 }
 
