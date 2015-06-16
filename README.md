@@ -1,8 +1,8 @@
 # LGridView
-实现page功能
+实现page功能,无限循环
 
 # 引用方式
-pod 'LPageView', :git => 'https://github.com/loftor/LPageView.git', :tag => 'v2.0'
+pod 'LPageView', :git => 'https://github.com/loftor/LPageView.git', :tag => 'v3.0'
 
 # 使用方式
 1、修改类名LPageView

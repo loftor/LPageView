@@ -18,7 +18,7 @@
 
 @property (nonatomic, strong) UIView * tmp;
 
-@property (nonatomic, assign) NSInteger nums;
+@property (nonatomic, assign) NSUInteger nums;
 
 @property (nonatomic, strong) NSString * className;
 
@@ -69,15 +69,35 @@
 
 - (void)setDataSource:(id<LPageViewDataSource>)dataSource{
     
+    
+    if (dataSource && [dataSource respondsToSelector:@selector(numberOfLPageView)] && [dataSource respondsToSelector:@selector(pageView:viewForIndex:)]) {
+        _dataSource = dataSource;
+        [self loadData];
+    }
+    
+    
+}
+
+- (void)loadData{
+    
+    if (_dataSource == nil) {
+        return;
+    }
+    
     for (UIView * view in self.subviews) {
         [view removeFromSuperview];
     }
     
-    _dataSource = dataSource;
-    
-    
     self.nums = [_dataSource numberOfLPageView];
-    if (self.nums > 0) {
+    
+    if (_index>=_nums) {
+        _index = 0;
+    }
+    
+    if (_nums == 0) {
+        return;
+    }
+    if (_nums > 0) {
         self.viewCenter = [_dataSource pageView:self viewForIndex:_index];
         _viewCenter.frame = self.bounds;
         [self addSubview:_viewCenter];
@@ -86,7 +106,7 @@
             [_delegate pageView:self didScrollToIndex:_index];
         }
     }
-    if (self.nums > 1) {
+    if (_nums > 1) {
         self.viewLeft = [_dataSource pageView:self viewForIndex:[self getLeftIndex]];
         [self addSubview:_viewLeft];
         
@@ -95,12 +115,12 @@
         
         switch (_direction) {
             case LPageViewDirectionHorizontal:
-                _viewLeft.frame = CGRectMake(-self.bounds.size.width, self.bounds.origin.y, self.bounds.size.width, self.bounds.size.height);
-                _viewRight.frame = CGRectMake(self.bounds.size.width, self.bounds.origin.y, self.bounds.size.width, self.bounds.size.height);
+                _viewLeft.frame = CGRectMake(-self.bounds.size.width-_interSpacing, self.bounds.origin.y, self.bounds.size.width, self.bounds.size.height);
+                _viewRight.frame = CGRectMake(self.bounds.size.width+_interSpacing, self.bounds.origin.y, self.bounds.size.width, self.bounds.size.height);
                 break;
             case LPageViewDirectionVertical:
-                _viewLeft.frame = CGRectMake(self.bounds.origin.x, -self.bounds.size.height, self.bounds.size.width, self.bounds.size.height);
-                _viewRight.frame = CGRectMake(self.bounds.origin.x, self.bounds.size.height, self.bounds.size.width, self.bounds.size.height);
+                _viewLeft.frame = CGRectMake(self.bounds.origin.x, -self.bounds.size.height-_interSpacing, self.bounds.size.width, self.bounds.size.height);
+                _viewRight.frame = CGRectMake(self.bounds.origin.x, self.bounds.size.height+_interSpacing, self.bounds.size.width, self.bounds.size.height);
                 break;
                 
             default:
@@ -143,6 +163,7 @@
 
 
 - (void)tapAction:(UITapGestureRecognizer *)sender {
+    
     if (_delegate) {
         [_delegate pageView:self didSelectForIndex:_index];
     }
@@ -154,16 +175,14 @@
     if (_nums<2) {
         return;
     }
-
-
-
+    
     CGPoint pt = [sender translationInView:self];
-
+    
     switch (sender.state) {
         case UIGestureRecognizerStateBegan:
-            {
-
-            }
+        {
+            self.point = pt;
+        }
             break;
         case UIGestureRecognizerStateChanged:
         {
@@ -220,6 +239,7 @@
                 
             }
             
+            
             [self movetoDefault];
         }
         default:
@@ -231,6 +251,11 @@
 
 -(void)swipeGesture:(UISwipeGestureRecognizer *)sender
 {
+
+    if (_nums<2) {
+        return;
+    }
+    
     if (sender.direction == UISwipeGestureRecognizerDirectionLeft) {
         [self moveToRight];
     }
@@ -243,7 +268,7 @@
     
 }
 
-- (NSInteger)getRightIndex{
+- (NSUInteger)getRightIndex{
     if (_index<_nums-1) {
         return _index+1;
     }
@@ -252,7 +277,7 @@
     }
 }
 
-- (NSInteger)getLeftIndex{
+- (NSUInteger)getLeftIndex{
     if (_index==0) {
         return _nums-1;
     }
@@ -269,6 +294,16 @@
     self.viewRight = _viewCenter;
     self.viewCenter = _viewLeft;
     self.viewLeft = [_dataSource pageView:self viewForIndex:[self getLeftIndex]];
+    switch (_direction) {
+        case LPageViewDirectionHorizontal:
+            _viewLeft.frame = CGRectMake(_viewCenter.frame.origin.x-_viewCenter.frame.size.width-_interSpacing, self.bounds.origin.y, self.bounds.size.width, self.bounds.size.height);
+            break;
+        case LPageViewDirectionVertical:
+            _viewLeft.frame = CGRectMake(_viewCenter.frame.origin.x, self.bounds.origin.y-_viewCenter.frame.size.height-_interSpacing, self.bounds.size.width, self.bounds.size.height);
+            break;
+            
+    }
+    
     if (_delegate) {
         [_delegate pageView:self didScrollToIndex:_index];
     }
@@ -281,28 +316,43 @@
     self.viewLeft = _viewCenter;
     self.viewCenter = _viewRight;
     self.viewRight = [_dataSource pageView:self viewForIndex:[self getRightIndex]];
+    
+    switch (_direction) {
+        case LPageViewDirectionHorizontal:
+            _viewRight.frame = CGRectMake(_viewCenter.frame.origin.x+_viewCenter.frame.size.width+_interSpacing, self.bounds.origin.y, self.bounds.size.width, self.bounds.size.height);
+            break;
+        case LPageViewDirectionVertical:
+            _viewRight.frame = CGRectMake(_viewCenter.frame.origin.x, self.bounds.origin.y+_viewCenter.frame.size.height+_interSpacing, self.bounds.size.width, self.bounds.size.height);
+            break;
+            
+    }
+    
     if (_delegate) {
         [_delegate pageView:self didScrollToIndex:_index];
     }
 }
 
 - (void)movetoDefault{
-    self.point = CGPointMake(0, 0);
-    switch (_direction) {
-        case LPageViewDirectionHorizontal:
-            _viewCenter.frame = self.bounds;
-            _viewLeft.frame = CGRectMake(-self.bounds.size.width, self.bounds.origin.y, self.bounds.size.width, self.bounds.size.height);
-            _viewRight.frame = CGRectMake(self.bounds.size.width, self.bounds.origin.y, self.bounds.size.width, self.bounds.size.height);
-            break;
-        case LPageViewDirectionVertical:
-            _viewCenter.frame = self.bounds;
-            _viewLeft.frame = CGRectMake(self.bounds.origin.x, -self.bounds.size.height, self.bounds.size.width, self.bounds.size.height);
-            _viewRight.frame = CGRectMake(self.bounds.origin.x, self.bounds.size.height, self.bounds.size.width, self.bounds.size.height);
-            break;
-            
-        default:
-            break;
-    }
+    [UIView animateWithDuration:0.25 delay:0 options:9 << 16 animations:^{
+        switch (_direction) {
+            case LPageViewDirectionHorizontal:
+                _viewCenter.frame = self.bounds;
+                _viewLeft.frame = CGRectMake(-self.bounds.size.width-_interSpacing, self.bounds.origin.y, self.bounds.size.width, self.bounds.size.height);
+                _viewRight.frame = CGRectMake(self.bounds.size.width+_interSpacing, self.bounds.origin.y, self.bounds.size.width, self.bounds.size.height);
+                break;
+            case LPageViewDirectionVertical:
+                _viewCenter.frame = self.bounds;
+                _viewLeft.frame = CGRectMake(self.bounds.origin.x, -self.bounds.size.height-_interSpacing, self.bounds.size.width, self.bounds.size.height);
+                _viewRight.frame = CGRectMake(self.bounds.origin.x, self.bounds.size.height+_interSpacing, self.bounds.size.width, self.bounds.size.height);
+                break;
+                
+            default:
+                break;
+        }
+    } completion:^(BOOL finished) {
+
+    }];
+    
 }
 
 @end

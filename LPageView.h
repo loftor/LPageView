@@ -17,9 +17,9 @@ typedef NS_ENUM(NSUInteger, LPageDirection) {
 
 @protocol LPageViewDelegate <NSObject>
 
-- (void)pageView:(LPageView *)pageView didSelectForIndex:(NSInteger)index;
+- (void)pageView:(LPageView *)pageView didSelectForIndex:(NSUInteger)index;
 
-- (void)pageView:(LPageView *)pageView didScrollToIndex:(NSInteger)index;
+- (void)pageView:(LPageView *)pageView didScrollToIndex:(NSUInteger)index;
 
 @end
 
@@ -27,9 +27,9 @@ typedef NS_ENUM(NSUInteger, LPageDirection) {
 
 @required
 
-- (NSInteger)numberOfLPageView;
+- (NSUInteger)numberOfLPageView;
 
-- (UIView *)pageView:(LPageView *)pageView viewForIndex:(NSInteger)index;
+- (UIView *)pageView:(LPageView *)pageView viewForIndex:(NSUInteger)index;
 
 @end
 
@@ -39,20 +39,23 @@ typedef NS_ENUM(NSUInteger, LPageDirection) {
 @property (assign, nonatomic) IBInspectable NSUInteger  direction;
 
 //@property (assign, nonatomic) IBInspectable BOOL autoSlide;
-//
-//@property (assign, nonatomic) IBInspectable float slideTime;
-//
+
 //@property (assign, nonatomic) IBInspectable float slideInteval;
 
-@property (assign, nonatomic, readonly) NSInteger index;
+@property (assign, nonatomic) float interSpacing;
+
+@property (assign, nonatomic) NSUInteger index;
 
 @property (weak, nonatomic) id<LPageViewDelegate> delegate;
 
 @property (weak, nonatomic) id<LPageViewDataSource> dataSource;
 
 - (void)registerClassName:(nullable NSString *)className;
+
 - (void)registerNibName:(nullable NSString *)nibName;
 
 - (UIView *)dequeueReusableView;
+
+- (void)loadData;
 
 @end
