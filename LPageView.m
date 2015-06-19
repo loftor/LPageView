@@ -26,6 +26,8 @@
 
 @property (nonatomic, assign) CGPoint point;
 
+@property (nonatomic, strong) dispatch_source_t timer;
+
 @end
 
 @implementation LPageView
@@ -37,6 +39,8 @@
     // Drawing code
 }
 */
+
+static NSUInteger currentInterval;
 
 - (instancetype)initWithFrame:(CGRect)frame{
     if (self == [super initWithFrame:frame]) {
@@ -51,6 +55,11 @@
 }
 
 - (void)initPageView{
+    
+    _slideInteval = 3;
+    
+    self.autoSlide = YES;
+    
     UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tapAction:)];
     [self addGestureRecognizer:tap];
     
@@ -78,6 +87,36 @@
     
 }
 
+- (dispatch_source_t)timer{
+    if (_timer == nil) {
+        dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+        self.timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, queue);
+        dispatch_source_set_timer(_timer, dispatch_time(DISPATCH_TIME_NOW, 0 * NSEC_PER_SEC), 1 * NSEC_PER_SEC, 0);
+        dispatch_source_set_event_handler(_timer, ^{
+            
+            currentInterval++;
+            if (currentInterval == _slideInteval) {
+                currentInterval = 0;
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self moveToRight];
+                    [self movetoDefault];
+                });
+                
+            }
+            
+            
+        });
+    }
+    return _timer;
+}
+
+- (void)cancelTimer{
+    if (_timer) {
+        dispatch_source_cancel(_timer);
+        self.timer = nil;
+    }
+}
+
 - (void)loadData{
     
     if (_dataSource == nil) {
@@ -89,6 +128,10 @@
     }
     
     self.nums = [_dataSource numberOfLPageView];
+    
+    if (_nums < 2) {
+        self.autoSlide = NO;
+    }
     
     if (_index>=_nums) {
         _index = 0;
@@ -126,6 +169,10 @@
             default:
                 break;
         }
+    }
+    
+    if (_autoSlide) {
+        dispatch_resume(self.timer);
     }
 }
 
@@ -176,12 +223,17 @@
         return;
     }
     
+    if(_autoSlide){
+        currentInterval = 0;
+    }
+    
     CGPoint pt = [sender translationInView:self];
     
     switch (sender.state) {
         case UIGestureRecognizerStateBegan:
         {
             self.point = pt;
+            
         }
             break;
         case UIGestureRecognizerStateChanged:
@@ -350,9 +402,15 @@
                 break;
         }
     } completion:^(BOOL finished) {
-
+        if(_autoSlide){
+            currentInterval = 0;
+        }
     }];
     
+}
+
+- (void)dealloc{
+    [self cancelTimer];
 }
 
 @end

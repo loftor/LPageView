@@ -38,9 +38,9 @@ typedef NS_ENUM(NSUInteger, LPageDirection) {
 
 @property (assign, nonatomic) IBInspectable NSUInteger  direction;
 
-//@property (assign, nonatomic) IBInspectable BOOL autoSlide;
+@property (assign, nonatomic) IBInspectable BOOL autoSlide;
 
-//@property (assign, nonatomic) IBInspectable float slideInteval;
+@property (assign, nonatomic) IBInspectable NSUInteger slideInteval;
 
 @property (assign, nonatomic) float interSpacing;
 
